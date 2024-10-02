@@ -20,6 +20,7 @@ def client():
         yield app.test_client()  # tests run here
         db.drop_all()  # teardown
 
+
 def login(client, username, password):
     """Login helper function"""
     return client.post(
@@ -75,6 +76,7 @@ def test_messages(client):
     assert b"&lt;Hello&gt;" in rv.data
     assert b"<strong>HTML</strong> allowed here" in rv.data
 
+
 def test_delete_message(client):
     """Ensure the messages are being deleted"""
     rv = client.get("/delete/1")
@@ -85,9 +87,10 @@ def test_delete_message(client):
     data = json.loads(rv.data)
     assert data["status"] == 1
 
+
 def test_search(client):
     """Ensure that user can search for results"""
-    rv = client.get('/search/')
+    rv = client.get("/search/")
     assert rv.status_code == 200
     # test if search returns proper posts
     login(client, app.config["USERNAME"], app.config["PASSWORD"])
@@ -96,36 +99,49 @@ def test_search(client):
         data=dict(title="<Hello>", text="Hello World"),
         follow_redirects=True,
     )
-    rv = client.get('/search/?query=Hello')
+    rv = client.get("/search/?query=Hello")
     assert b"&lt;Hello&gt;" in rv.data
-    rv = client.get('/search/?query=World')
+    rv = client.get("/search/?query=World")
     assert b"&lt;Hello&gt;" in rv.data
-    rv = client.get('/search/?query=Random')
+    rv = client.get("/search/?query=Random")
     assert b"&lt;Hello&gt;" not in rv.data
 
-    #post a second post
+    # post a second post
     rv = client.post(
         "/add",
         data=dict(title="<John>", text="John says hello"),
         follow_redirects=True,
     )
-    rv = client.get('/search/?query=Hello')
+    rv = client.get("/search/?query=Hello")
     assert b"&lt;Hello&gt;" in rv.data and b"&lt;John&gt;" in rv.data
 
-    #post a third post
+    # post a third post
     rv = client.post(
         "/add",
         data=dict(title="<Mike>", text="Mike says hi to John"),
         follow_redirects=True,
     )
-    rv = client.get('/search/?query=Hello')
-    assert b"&lt;Hello&gt;" in rv.data and b"&lt;John&gt;" in rv.data and b"&lt;Mike&gt;" not in rv.data
+    rv = client.get("/search/?query=Hello")
+    assert (
+        b"&lt;Hello&gt;" in rv.data
+        and b"&lt;John&gt;" in rv.data
+        and b"&lt;Mike&gt;" not in rv.data
+    )
 
-    rv = client.get('/search/?query=John')
-    assert b"&lt;Hello&gt;" not in rv.data and b"&lt;John&gt;" in rv.data and b"&lt;Mike&gt;" in rv.data
+    rv = client.get("/search/?query=John")
+    assert (
+        b"&lt;Hello&gt;" not in rv.data
+        and b"&lt;John&gt;" in rv.data
+        and b"&lt;Mike&gt;" in rv.data
+    )
 
-    rv = client.get('/search/?query=hi')
-    assert b"&lt;Hello&gt;" not in rv.data and b"&lt;John&gt;" not in rv.data and b"&lt;Mike&gt;" in rv.data
+    rv = client.get("/search/?query=hi")
+    assert (
+        b"&lt;Hello&gt;" not in rv.data
+        and b"&lt;John&gt;" not in rv.data
+        and b"&lt;Mike&gt;" in rv.data
+    )
+
 
 def test_delete_login(client):
     """Ensure only logged in user can delete posts"""
