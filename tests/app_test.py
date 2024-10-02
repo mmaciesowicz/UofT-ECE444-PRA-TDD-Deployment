@@ -80,3 +80,45 @@ def test_delete_message(client):
     rv = client.get('/delete/1')
     data = json.loads(rv.data)
     assert data["status"] == 1
+
+def test_search(client):
+    """Ensure that user can search for results"""
+    rv = client.get('/search/')
+    assert rv.status_code == 200
+    # test if search returns proper posts
+    login(client, app.config["USERNAME"], app.config["PASSWORD"])
+    rv = client.post(
+        "/add",
+        data=dict(title="<Hello>", text="Hello World"),
+        follow_redirects=True,
+    )
+    rv = client.get('/search/?query=Hello')
+    assert b"&lt;Hello&gt;" in rv.data
+    rv = client.get('/search/?query=World')
+    assert b"&lt;Hello&gt;" in rv.data
+    rv = client.get('/search/?query=Random')
+    assert b"&lt;Hello&gt;" not in rv.data
+
+    #post a second post
+    rv = client.post(
+        "/add",
+        data=dict(title="<John>", text="John says hello"),
+        follow_redirects=True,
+    )
+    rv = client.get('/search/?query=Hello')
+    assert b"&lt;Hello&gt;" in rv.data and b"&lt;John&gt;" in rv.data
+
+    #post a third post
+    rv = client.post(
+        "/add",
+        data=dict(title="<Mike>", text="Mike says hi to John"),
+        follow_redirects=True,
+    )
+    rv = client.get('/search/?query=Hello')
+    assert b"&lt;Hello&gt;" in rv.data and b"&lt;John&gt;" in rv.data and b"&lt;Mike&gt;" not in rv.data
+
+    rv = client.get('/search/?query=John')
+    assert b"&lt;Hello&gt;" not in rv.data and b"&lt;John&gt;" in rv.data and b"&lt;Mike&gt;" in rv.data
+
+    rv = client.get('/search/?query=hi')
+    assert b"&lt;Hello&gt;" not in rv.data and b"&lt;John&gt;" not in rv.data and b"&lt;Mike&gt;" in rv.data
